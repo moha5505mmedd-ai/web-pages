@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قطار الأسئلة التفاعلية</title>
+    <style>
+        :root {
+            --primary: #1F3864; /* كحلي */
+            --accent: #C9A227; /* ذهبي */
+            --bg: #D6E4F0; /* أزرق فاتح */
+            --text-color: #333;
+            --success: #2ecc71;
+            --error: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header / Header Strip */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.5s ease;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header.small-header {
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        header h1 {
+            margin: 0 0 10px 0;
+            color: var(--accent);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-size: 2em;
+        }
+        
+        header.small-header h1 {
+            font-size: 1.2em;
+            margin: 0;
+        }
+
+        .header-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            font-weight: bold;
+        }
+        
+        header.small-header .header-info {
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-info span {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid var(--accent);
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Start Screen */
+        .start-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            text-align: center;
+            border: 3px solid var(--accent);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .start-container h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            font-size: 1.2em;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: 2px solid var(--accent);
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background-color: var(--accent);
+            color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        /* Game Screen */
+        .player-info-bar {
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--primary);
+            border: 2px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        /* Train Container */
+        .train-viewport {
+            width: 100%;
+            overflow: hidden; /* Hide overflowing train */
+            position: relative;
+            padding: 40px 0;
+            min-height: 250px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .track {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: #555;
+            border-radius: 5px;
+        }
+
+        .track::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #333;
+            border-top: 4px dashed #888;
+            transform: translateY(-50%);
+        }
+
+        .train-container {
+            display: flex;
+            flex-direction: row-reverse; /* Train moves right to left in RTL */
+            align-items: flex-end;
+            position: absolute;
+            bottom: 30px;
+            right: 0; /* Start from right edge */
+            transition: transform 1s cubic-bezier(0.25, 0.1, 0.25, 1);
+            /* Gap between cars */
+            gap: 5px; 
+            padding-right: 50px; /* Initial offset so engine is fully visible */
+        }
+
+        .locomotive {
+            width: 120px;
+            height: 100px;
+            background-color: var(--primary);
+            border-radius: 20px 20px 0 0;
+            position: relative;
+            border: 3px solid var(--accent);
+            z-index: 10;
+        }
+        
+        .locomotive::before { /* Cabin */
+            content: '';
+            position: absolute;
+            top: -40px;
+            left: 10px;
+            width: 60px;
+            height: 40px;
+            background-color: var(--primary);
+            border-radius: 10px 10px 0 0;
+            border: 3px solid var(--accent);
+            border-bottom: none;
+        }
+        
+        .locomotive::after { /* Window */
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 25px;
+            width: 30px;
+            height: 20px;
+            background-color: var(--bg);
+            border-radius: 5px;
+        }
+        
+        .smokestack {
+            position: absolute;
+            top: -30px;
+            right: 20px;
+            width: 20px;
+            height: 30px;
+            background-color: #333;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .wheel {
+            position: absolute;
+            bottom: -15px;
+            width: 30px;
+            height: 30px;
+            background-color: #333;
+            border-radius: 50%;
+            border: 3px solid #ccc;
+        }
+        
+        .locomotive .wheel:nth-child(1) { right: 10px; }
+        .locomotive .wheel:nth-child(2) { left: 10px; }
+        .locomotive .wheel:nth-child(3) { left: 45px; }
+
+        .wagon {
+            width: 150px;
+            height: 110px;
+            background-color: white;
+            border: 4px solid var(--primary);
+            border-radius: 10px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+        
+        .wagon::before { /* Connector */
+            content: '';
+            position: absolute;
+            right: -13px; /* Connects to the wagon/engine to its right */
+            bottom: 10px;
+            width: 10px;
+            height: 10px;
+            background-color: #333;
+            border-radius: 50%;
+        }
+
+        .wagon .wheel:nth-child(1) { right: 20px; }
+        .wagon .wheel:nth-child(2) { left: 20px; }
+
+        .wagon-number {
+            background-color: var(--accent);
+            color: var(--primary);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            position: absolute;
+            top: -15px;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .drop-zone {
+            width: 90%;
+            height: 60px;
+            margin-top: 30px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            background-color: #f9f9f9;
+            transition: all 0.3s;
+        }
+
+        .drop-zone.active-zone {
+            border-color: var(--accent);
+            background-color: rgba(201, 162, 39, 0.1);
+        }
+        
+        .drop-zone.hover {
+            background-color: rgba(46, 204, 113, 0.2);
+            border-color: var(--success);
+        }
+
+        .wagon.completed {
+            border-color: var(--success);
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+        
+        .wagon.completed .drop-zone {
+            border: none;
+            background-color: transparent;
+            color: var(--primary);
+            font-size: 1.5em;
+        }
+        
+        .wagon.error-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            border-color: var(--error);
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        /* Question Area */
+        .question-container {
+            background: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: 2px solid var(--primary);
+            text-align: center;
+            width: 90%;
+            max-width: 800px;
+            font-size: 1.5em;
+            font-weight: bold;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            direction: rtl; /* Ensure math stays RTL */
+        }
+        
+        .math-eq {
+            display: inline-block;
+            direction: rtl;
+            unicode-bidi: embed;
+            font-family: inherit;
+        }
+
+        .options-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .option {
+            background-color: white;
+            border: 3px solid var(--primary);
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+            touch-action: none; /* Important for mobile drag */
+        }
+        
+        .option:active {
+            cursor: grabbing;
+        }
+
+        .option.dragging {
+            opacity: 0.5;
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        /* Feedback overlays */
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(255,255,255,0.95);
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            z-index: 2000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+
+        .feedback.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .feedback.success { border: 5px solid var(--success); color: var(--success); }
+        .feedback.error { border: 5px solid var(--error); color: var(--error); }
+
+        .motivational-msg {
+            font-size: 0.6em;
+            color: var(--primary);
+            margin-top: 10px;
+            display: block;
+        }
+
+        /* Particles */
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 1999;
+            font-size: 24px;
+        }
+        
+        @keyframes fall {
+            0% { opacity: 1; transform: translate(0, -50px) rotate(0deg); }
+            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(var(--rot)); }
+        }
+
+        /* Certificate Screen */
+        .certificate-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            border: 10px double var(--accent);
+            max-width: 800px;
+            width: 90%;
+            position: relative;
+        }
+        
+        .cert-header {
+            color: var(--primary);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .cert-body {
+            font-size: 1.5em;
+            line-height: 1.8;
+            margin: 30px 0;
+        }
+        
+        .cert-name {
+            color: var(--accent);
+            font-size: 1.5em;
+            font-weight: bold;
+            display: block;
+            margin: 10px 0;
+            text-decoration: underline;
+        }
+        
+        .cert-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .leaderboard {
+            margin-top: 40px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard th, .leaderboard td {
+            border: 1px solid var(--primary);
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .leaderboard th {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .current-player-row {
+            background-color: rgba(201, 162, 39, 0.3);
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        @media print {
+            body * { visibility: hidden; }
+            .certificate-container, .certificate-container * { visibility: visible; }
+            .certificate-container { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border: 5px solid black; }
+            .action-buttons, .leaderboard-section { display: none; }
+            header { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .wagon { width: 100px; height: 90px; }
+            .locomotive { width: 80px; height: 80px; }
+            .locomotive::before { width: 40px; height: 30px; top: -30px; }
+            .wagon-number { width: 25px; height: 25px; font-size: 1em; top: -10px; }
+            .drop-zone { height: 40px; margin-top: 25px; font-size: 1em; }
+            .question-container { font-size: 1.2em; padding: 15px; }
+            .option { padding: 10px 20px; font-size: 1.2em; }
+            .header-info { font-size: 0.9em; }
+            header.small-header { flex-direction: column; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sounds (Generated dynamically via AudioContext or base64 to remain single file) -->
+    <!-- We'll use Web Audio API for simple synth sounds to keep the file strictly standalone -->
+
+    <header id="main-header">
+        <h1>قطار الأسئلة التفاعلية</h1>
+        <div class="header-info">
+            <span>المادة: رياضيات</span>
+            <span>الدرس: المعادلات</span>
+            <span>الصف: السابع</span>
+            <span>المعلم: محمد المقبلي</span>
+            <span>المدرسة: </span>
+        </div>
+    </header>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active">
+        <div class="start-container">
+            <h2>مرحباً بك في قطار الأسئلة!</h2>
+            <p>أدخل اسمك لتبدأ الرحلة وحل المعادلات</p>
+            <input type="text" id="player-name-input" placeholder="اكتب اسمك هنا..." autocomplete="off">
+            <br>
+            <button onclick="startGame()">ابدأ اللعب الآن</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="player-info-bar">
+            <span>اللاعب: <span id="display-name"></span></span>
+            <span>النقاط: <span id="score-display">٠</span> / ١٠</span>
+        </div>
+
+        <div class="train-viewport">
+            <div class="track"></div>
+            <div class="train-container" id="train">
+                <div class="locomotive">
+                    <div class="smokestack"></div>
+                    <div class="wheel"></div>
+                    <div class="wheel"></div>
+                    <div class="wheel"></div>
+                </div>
+                <!-- Wagons will be generated here -->
+            </div>
+        </div>
+
+        <div class="question-container" id="question-box">
+            <!-- Question text goes here -->
+        </div>
+
+        <div class="options-container" id="options-box">
+            <!-- Options generated here -->
+        </div>
+    </div>
+
+    <!-- Certificate Screen -->
+    <div id="cert-screen" class="screen">
+        <div class="certificate-container" id="printable-cert">
+            <div class="cert-header">شهادة إنجاز وتفوق</div>
+            <div class="cert-body">
+                يشهد محرك "قطار الأسئلة التفاعلية" بأن الطالب/ـة:
+                <span class="cert-name" id="cert-player-name"></span>
+                قد أكمل بنجاح لعبة رياضيات (درس المعادلات) للصف السابع.
+                <br><br>
+                عدد الإجابات الصحيحة: <span id="cert-score" style="color:var(--success); font-weight:bold;"></span> من ١٠
+            </div>
+            <div class="cert-footer">
+                <div>المعلم: محمد المقبلي</div>
+                <div>المدرسة: </div>
+                <div id="cert-date"></div>
+            </div>
+        </div>
+        
+        <div class="leaderboard-section" style="width: 90%; max-width: 800px;">
+            <h3 style="text-align: center; color: var(--primary); margin-top: 30px;">لوحة الشرف (التصنيف التخيلي)</h3>
+            <table class="leaderboard" id="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>الترتيب</th>
+                        <th>اسم اللاعب</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows generated dynamically -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="window.print()">طباعة الشهادة</button>
+            <button onclick="location.reload()">لعب مرة أخرى</button>
+        </div>
+    </div>
+
+    <!-- Feedback -->
+    <div id="feedback-overlay" class="feedback">
+        <div id="feedback-text"></div>
+        <div id="feedback-msg" class="motivational-msg"></div>
+    </div>
+
+<script>
+    /* Convert standard numbers to Eastern Arabic Numerals */
+    function toHindiNums(str) {
+        const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        return str.toString().replace(/[0-9]/g, function(w) {
+            return arabicNumbers[w];
+        });
+    }
+
+    /* Format Math string to ensure negative sign is before the Hindi numeral in RTL */
+    function formatMath(str) {
+        // Replace ASCII minus with a proper minus sign or keep as is, but ensure RTL context
+        let formatted = str.replace(/-/g, '−'); // Use true minus sign
+        // The bidi algorithm usually handles negative numbers correctly if wrapped in a dir="rtl" block,
+        // but we explicitly use Hindi numerals.
+        return `<span class="math-eq">${toHindiNums(formatted)}</span>`;
+    }
+
+    // --- Audio System (Synthesized to avoid external files) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        if (type === 'correct') {
+            // Happy chime
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+            osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+            
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.5);
+        } else if (type === 'wrong') {
+            // Low boop
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.3);
+        } else if (type === 'move') {
+            // Train whistle/chug
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(250, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+    }
+
+    // --- Game Data (Based on Yemeni 7th grade math textbook equations concepts) ---
+    /*
+      Requirements: 10 questions (6 easy, 3 medium, 1 hard).
+      Equations derived from/inspired by source material (e.g. 2s = 6, s - 2 = 3, s + 5 = 9, 2s - 6 = 0, 5s + 2s = -7).
+      Variable 'س' (s) or 'ص' (ss).
+      Options must be Hindi numerals.
+    */
+    const questionsData = [
+        // Easy (6) - Direct one step
+        { q: "حل المعادلة: س - ٢ = ٣", ans: "٥", options: ["١", "٥", "٦"], type: "easy" },
+        { q: "حل المعادلة: س + ٥ = ٩", ans: "٤", options: ["٤", "١٤", "٥"], type: "easy" },
+        { q: "حل المعادلة: ٢س = ٦", ans: "٣", options: ["٣", "٤", "١٢"], type: "easy" },
+        { q: "حل المعادلة: ٤س = -١٦", ans: "-٤", options: ["-٤", "٤", "٢٠"], type: "easy" },
+        { q: "حل المعادلة: ص - ٥ = ١٢", ans: "١٧", options: ["٧", "١٧", "-٧"], type: "easy" },
+        { q: "حل المعادلة: -٣س = ٩", ans: "-٣", options: ["٣", "-٣", "٦"], type: "easy" },
+        
+        // Medium (3) - Two steps / collecting like terms on one side
+        { q: "حل المعادلة: ٢س - ٤ = ٠", ans: "٢", options: ["-٢", "٢", "٤"], type: "medium" },
+        { q: "حل المعادلة: ٥س + ٢س = -١٤", ans: "-٢", options: ["-٢", "٢", "-٧"], type: "medium" },
+        { q: "حل المعادلة: ٣ص - ٢ = ٧", ans: "٣", options: ["٣", "٥", "٩"], type: "medium" },
+        
+        // Hard (1) - Variables on both sides / multi-step
+        { q: "حل المعادلة: ٦س + ٤ = ٢س - ٨", ans: "-٣", options: ["٣", "-٣", "-١"], type: "hard" }
+    ];
+
+    const motivationalMessages = [
+        "أنت عبقري في الرياضيات!",
+        "إجابة دقيقة، استمر!",
+        "خطوة رائعة نحو القمة!",
+        "تفكير سليم وعقل رياضي فذ!",
+        "ممتاز! لقد أصبت الهدف.",
+        "رائع جداً، واصل التألق!",
+        "أنت بطل المعادلات!",
+        "إجابة صحيحة، القطار يتقدم بفضلك!",
+        "عمل مبهر، لا تتوقف!",
+        "ذكاؤك يضيء الطريق!"
+    ];
+
+    // --- State Variables ---
+    let playerName = "";
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let wagonOffset = 0; // Tracks train movement
+    
+    // Elements
+    const startScreen = document.getElementById('start-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const certScreen = document.getElementById('cert-screen');
+    const trainContainer = document.getElementById('train');
+    const questionBox = document.getElementById('question-box');
+    const optionsBox = document.getElementById('options-box');
+    const header = document.getElementById('main-header');
+    
+    // Drag and Drop variables
+    let draggedElement = null;
+
+    // --- Initialization ---
+    function startGame() {
+        const input = document.getElementById('player-name-input').value.trim();
+        if (!input) {
+            alert("الرجاء إدخال اسمك للبدء!");
+            return;
+        }
+        playerName = input;
+        document.getElementById('display-name').textContent = playerName;
+        
+        // Transition screens
+        startScreen.classList.remove('active');
+        gameScreen.classList.add('active');
+        header.classList.add('small-header');
+
+        // Need to resume audio context on first user interaction
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+
+        buildTrain();
+        loadQuestion();
+    }
+
+    function buildTrain() {
+        // Train already has locomotive. Add 10 wagons.
+        // In RTL flex-direction row-reverse, appended items go to the left.
+        // Wagon 1 is closest to locomotive, Wagon 10 is at the far left end.
+        for (let i = 1; i <= 10; i++) {
+            const wagon = document.createElement('div');
+            wagon.className = 'wagon';
+            wagon.id = `wagon-${i}`;
+            
+            const number = document.createElement('div');
+            number.className = 'wagon-number';
+            number.textContent = toHindiNums(i);
+            
+            const dropZone = document.createElement('div');
+            dropZone.className = 'drop-zone';
+            dropZone.id = `drop-${i}`;
+            dropZone.textContent = 'ضع هنا';
+            
+            // Wheels
+            const w1 = document.createElement('div'); w1.className = 'wheel';
+            const w2 = document.createElement('div'); w2.className = 'wheel';
+            
+            wagon.appendChild(number);
+            wagon.appendChild(dropZone);
+            wagon.appendChild(w1);
+            wagon.appendChild(w2);
+            
+            // Drop events
+            dropZone.addEventListener('dragover', handleDragOver);
+            dropZone.addEventListener('dragenter', handleDragEnter);
+            dropZone.addEventListener('dragleave', handleDragLeave);
+            dropZone.addEventListener('drop', handleDrop);
+            
+            // Touch events for dropzone simulation are handled globally
+
+            trainContainer.appendChild(wagon);
+        }
+    }
+
+    function loadQuestion() {
+        if (currentQuestionIndex >= 10) {
+            endGame();
+            return;
+        }
+
+        const qData = questionsData[currentQuestionIndex];
+        const wagonNumber = currentQuestionIndex + 1;
+        
+        // Highlight current wagon drop zone
+        document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('active-zone'));
+        document.getElementById(`drop-${wagonNumber}`).classList.add('active-zone');
+
+        // Set Question
+        // Ensure equation formats properly RTL
+        questionBox.innerHTML = `السؤال ${toHindiNums(wagonNumber)}: &nbsp; <span dir="rtl">${formatMath(qData.q)}</span>`;
+        
+        // Shuffle and set options
+        const shuffledOptions = [...qData.options].sort(() => Math.random() - 0.5);
+        optionsBox.innerHTML = '';
+        
+        shuffledOptions.forEach((opt, index) => {
+            const btn = document.createElement('div');
+            btn.className = 'option';
+            btn.innerHTML = formatMath(opt);
+            btn.setAttribute('data-value', opt); // Store raw string for comparison
+            btn.draggable = true;
+            
+            // Mouse Drag Events
+            btn.addEventListener('dragstart', handleDragStart);
+            btn.addEventListener('dragend', handleDragEnd);
+            
+            // Touch Events for mobile drag and drop
+            btn.addEventListener('touchstart', handleTouchStart, {passive: false});
+            btn.addEventListener('touchmove', handleTouchMove, {passive: false});
+            btn.addEventListener('touchend', handleTouchEnd, {passive: false});
+
+            optionsBox.appendChild(btn);
+        });
+    }
+
+    // --- Drag and Drop Handlers (Mouse) ---
+    function handleDragStart(e) {
+        draggedElement = this;
+        this.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', this.getAttribute('data-value'));
+        e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('hover'));
+        draggedElement = null;
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault(); // Necessary to allow dropping
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleDragEnter(e) {
+        e.preventDefault();
+        if(this.id === `drop-${currentQuestionIndex + 1}`) {
+            this.classList.add('hover');
+        }
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('hover');
+    }
+
+    function handleDrop(e) {
+        e.stopPropagation();
+        this.classList.remove('hover');
+        
+        const targetWagonNum = currentQuestionIndex + 1;
+        
+        // Only accept drop on the current question's wagon
+        if (this.id !== `drop-${targetWagonNum}`) {
+            return false;
+        }
+
+        const droppedValue = e.dataTransfer.getData('text/plain');
+        checkAnswer(droppedValue, this);
+        return false;
+    }
+
+    // --- Touch Events Handlers (Mobile) ---
+    let touchOffsetX = 0;
+    let touchOffsetY = 0;
+    let cloneElement = null;
+
+    function handleTouchStart(e) {
+        if(e.target.classList.contains('option')) {
+            e.preventDefault(); // Prevent scrolling
+            draggedElement = e.target;
+            draggedElement.classList.add('dragging');
+            
+            const touch = e.touches[0];
+            const rect = draggedElement.getBoundingClientRect();
+            touchOffsetX = touch.clientX - rect.left;
+            touchOffsetY = touch.clientY - rect.top;
+
+            // Create clone for visual moving
+            cloneElement = draggedElement.cloneNode(true);
+            cloneElement.style.position = 'fixed';
+            cloneElement.style.left = (touch.clientX - touchOffsetX) + 'px';
+            cloneElement.style.top = (touch.clientY - touchOffsetY) + 'px';
+            cloneElement.style.zIndex = '9999';
+            cloneElement.style.pointerEvents = 'none'; // so we can find elements underneath
+            cloneElement.style.opacity = '0.8';
+            document.body.appendChild(cloneElement);
+        }
+    }
+
+    function handleTouchMove(e) {
+        if (!draggedElement || !cloneElement) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        
+        cloneElement.style.left = (touch.clientX - touchOffsetX) + 'px';
+        cloneElement.style.top = (touch.clientY - touchOffsetY) + 'px';
+
+        // Highlight drop zone if over it
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('hover'));
+        
+        if (elementBelow && elementBelow.classList.contains('drop-zone')) {
+            if(elementBelow.id === `drop-${currentQuestionIndex + 1}`) {
+                elementBelow.classList.add('hover');
+            }
+        }
+    }
+
+    function handleTouchEnd(e) {
+        if (!draggedElement) return;
+        
+        const touch = e.changedTouches[0];
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (cloneElement) {
+            cloneElement.remove();
+            cloneElement = null;
+        }
+
+        draggedElement.classList.remove('dragging');
+        document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('hover'));
+        
+        const targetWagonNum = currentQuestionIndex + 1;
+        const targetDropZone = document.getElementById(`drop-${targetWagonNum}`);
+
+        if (elementBelow && (elementBelow === targetDropZone || elementBelow.parentNode === targetDropZone.parentNode)) {
+             const droppedValue = draggedElement.getAttribute('data-value');
+             checkAnswer(droppedValue, targetDropZone);
+        }
+        
+        draggedElement = null;
+    }
+
+    // --- Game Logic ---
+    function checkAnswer(selectedValue, dropZoneElement) {
+        const correctAns = questionsData[currentQuestionIndex].ans;
+        const currentWagon = document.getElementById(`wagon-${currentQuestionIndex + 1}`);
+
+        if (selectedValue === correctAns) {
+            // Correct
+            score++;
+            document.getElementById('score-display').textContent = toHindiNums(score);
+            playSound('correct');
+            showFeedback(true);
+            createStars();
+            
+            // Lock answer in wagon
+            dropZoneElement.innerHTML = formatMath(selectedValue);
+            currentWagon.classList.add('completed');
+            dropZoneElement.classList.remove('active-zone');
+            
+            // Move train
+            moveTrain();
+            
+            // Next question
+            currentQuestionIndex++;
+            setTimeout(loadQuestion, 1500);
+
+        } else {
+            // Wrong
+            playSound('wrong');
+            showFeedback(false);
+            currentWagon.classList.add('error-shake');
+            setTimeout(() => {
+                currentWagon.classList.remove('error-shake');
+            }, 500);
+            // Answer bounces back (implicitly happens as it's not appended)
+        }
+    }
+
+    function moveTrain() {
+        // Calculate movement distance based on wagon width + gap
+        // Wagon width is ~150px (desktop) + 5px gap. Using a responsive approach:
+        const wagonElement = document.querySelector('.wagon');
+        const moveDist = wagonElement.offsetWidth + 5; 
+        
+        wagonOffset += moveDist;
+        
+        // In RTL, train moves right to left. trainContainer has flex-direction: row-reverse
+        // Default it's at right: 0. We transform translateX to move it left (which is positive X in CSS conceptually, but let's use transform)
+        // Wait, in RTL, right-to-left means moving left. 
+        // translateX(positive) moves right. translateX(negative) moves left.
+        trainContainer.style.transform = `translateX(-${wagonOffset}px)`;
+        
+        setTimeout(() => playSound('move'), 300);
+    }
+
+    function showFeedback(isCorrect) {
+        const overlay = document.getElementById('feedback-overlay');
+        const text = document.getElementById('feedback-text');
+        const msg = document.getElementById('feedback-msg');
+        
+        overlay.className = 'feedback show'; // reset classes
+        
+        if (isCorrect) {
+            overlay.classList.add('success');
+            text.textContent = 'أحسنت!';
+            msg.textContent = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+        } else {
+            overlay.classList.add('error');
+            text.textContent = 'حاول مرة أخرى';
+            msg.textContent = '';
+        }
+        
+        setTimeout(() => {
+            overlay.classList.remove('show');
+        }, 1200);
+    }
+
+    function createStars() {
+        for(let i=0; i<20; i++) {
+            const star = document.createElement('div');
+            star.className = 'particle';
+            star.textContent = '⭐';
+            star.style.left = '50%';
+            star.style.top = '50%';
+            
+            const tx = (Math.random() - 0.5) * 300 + 'px';
+            const ty = (Math.random() - 0.5) * 300 + 'px';
+            const rot = Math.random() * 360 + 'deg';
+            
+            star.style.setProperty('--tx', tx);
+            star.style.setProperty('--ty', ty);
+            star.style.setProperty('--rot', rot);
+            
+            star.style.animation = 'fall 1s ease-out forwards';
+            document.body.appendChild(star);
+            
+            setTimeout(() => star.remove(), 1000);
+        }
+    }
+
+    function endGame() {
+        gameScreen.classList.remove('active');
+        certScreen.classList.add('active');
+        
+        // Fill Certificate
+        document.getElementById('cert-player-name').textContent = playerName;
+        document.getElementById('cert-score').textContent = toHindiNums(score);
+        
+        const date = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        // Use Arabic format for date, then convert numerals
+        let dateString = date.toLocaleDateString('ar-EG', options);
+        document.getElementById('cert-date').textContent = "التاريخ: " + toHindiNums(dateString);
+
+        generateLeaderboard();
+    }
+
+    function generateLeaderboard() {
+        const tbody = document.querySelector('#leaderboard-table tbody');
+        tbody.innerHTML = '';
+        
+        // Mock players for competitive feel
+        const mockPlayers = [
+            {name: "أحمد", score: 9},
+            {name: "فاطمة", score: 10},
+            {name: "عمر", score: 8},
+            {name: "مريم", score: 7}
+        ];
+        
+        // Add current player
+        mockPlayers.push({name: playerName, score: score, isCurrent: true});
+        
+        // Sort by score descending
+        mockPlayers.sort((a, b) => b.score - a.score);
+        
+        mockPlayers.forEach((p, index) => {
+            const tr = document.createElement('tr');
+            if(p.isCurrent) tr.className = 'current-player-row';
+            
+            const tdRank = document.createElement('td');
+            tdRank.textContent = toHindiNums(index + 1);
+            
+            const tdName = document.createElement('td');
+            tdName.textContent = p.name + (p.isCurrent ? " (أنت)" : "");
+            
+            tr.appendChild(tdRank);
+            tr.appendChild(tdName);
+            tbody.appendChild(tr);
+        });
+    }
+
+</script>
+</body>
+</html>
